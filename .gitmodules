@@ -1,0 +1,6 @@
+[submodule "external/TestU01-2009"]
+	path = external/TestU01-2009
+	url = https://github.com/umontreal-simul/TestU01-2009
+[submodule "external/umontreal-simul/TestU01-2009"]
+	path = external/umontreal-simul/TestU01-2009
+	url = https://github.com/umontreal-simul/TestU01-2009.git
