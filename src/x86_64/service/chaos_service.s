@@ -1,5 +1,20 @@
 # =============================================================================
-# MT19937-64 Chaos Service — The High Performance Engine
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# =============================================================================
+# Name: chaos_service.s
+# Author: Aguas Guerreiro Roberto [agguro]
+# Date: 2026-07-05
+# Description: MT19937-64 Chaos Service — The High Performance Engine
 # =============================================================================
 # Description:
 #   A high‑throughput MT19937‑64 random number service using shared memory,
@@ -159,7 +174,7 @@ _start:
     movq $1, %rdi
     syscall
 
-# --- MT19937-64 IMPLEMENTATIE ---
+# --- MT19937-64 IMPLEMENTATION ---
 
 mt_init_64:
     leaq mt_state(%rip), %rdi
@@ -210,54 +225,49 @@ mt_rand_64:
     movabsq $0xFFF7EEE000000000, %r9
     andq %r9, %rax
     xorq %rax, %r8
-    
     movq %r8, %rax
     shrq $43, %rax
     xorq %rax, %r8
-    
     movq %r8, %rax
     ret
 
 mt_twist:
-    pushq %rbp
+    # No pushq %rbp needed. R9 is volatile and does not need to be saved.
     xorq %rcx, %rcx
     leaq mt_state(%rip), %rdi
 .twist_loop:
     movq (%rdi, %rcx, 8), %rax
     movabsq $0xFFFFFFFF80000000, %rdx
     andq %rdx, %rax
-
     movq %rcx, %rdx
     incq %rdx
     cmpq $312, %rdx
     jne .no_wrap
     xorq %rdx, %rdx
 .no_wrap:
-    movq (%rdi, %rdx, 8), %rbp
-    andq $0x7FFFFFFF, %rbp
-    orq %rbp, %rax
-
+    movq (%rdi, %rdx, 8), %r9
+    andq $0x7FFFFFFF, %r9
+    orq  %r9, %rax
     movq %rax, %rdx
     shrq $1, %rdx
     andq $1, %rax
     jz .no_xor
-    movabsq $0xB5026F5AA96619E9, %rbp
-    xorq %rbp, %rdx
+    movabsq $0xB5026F5AA96619E9, %r9
+    xorq %r9, %rdx
 .no_xor:
-    movq %rcx, %rbp
-    addq $156, %rbp
-    cmpq $312, %rbp
+    movq %rcx, %r9
+    addq $156, %r9
+    cmpq $312, %r9
     jl .no_m_wrap
-    subq $312, %rbp
+    subq $312, %r9
 .no_m_wrap:
-    xorq (%rdi, %rbp, 8), %rdx
+    xorq (%rdi, %r9, 8), %rdx
     movq %rdx, (%rdi, %rcx, 8)
     
     incq %rcx
     cmpq $312, %rcx
     jne .twist_loop
     movq $0, mt_index(%rip)
-    popq %rbp
     ret
 
 .size _start, . - _start

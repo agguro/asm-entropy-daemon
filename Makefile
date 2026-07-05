@@ -1,14 +1,15 @@
-cat << 'EOF' > Makefile
 # ==============================================================================
 # BARE-METAL IPC PRNG SERVICE ENGINE MAKEFILE
 # ==============================================================================
 
 AS      := as
-LD      := gcc
+LD      := ld
 
-# Sizing Matrix
+# Sizing and Linking
 ASFLAGS := --64
-LDFLAGS := -no-pie
+# -no-pie is not needed for ld (it's a gcc flag), 
+# -z noexecstack ensures your security-hardened stack stays secure
+LDFLAGS := -z noexecstack
 
 # Tree Directories
 SRC_DIR   := src/x86_64
@@ -24,13 +25,12 @@ COMMON_OBJ  := $(BUILD_DIR)/print_hex64.o
 SERVICE_OBJ := $(BUILD_DIR)/chaos_service.o
 CLIENT_OBJ  := $(BUILD_DIR)/chaos_client.o
 
-.PHONY: all clean directories test_suite
+.PHONY: all clean directories
 
 all: directories $(SERVICE_BIN) $(CLIENT_BIN)
 
 directories:
-	@mkdir -p $(BUILD_DIR)
-	@mkdir -p $(BIN_DIR)
+	@mkdir -p $(BUILD_DIR) $(BIN_DIR)
 
 # Assemble Common Objects
 $(COMMON_OBJ): $(SRC_DIR)/common/print_hex64.s
@@ -50,14 +50,14 @@ $(CLIENT_OBJ): $(SRC_DIR)/client/chaos_client.s
 # Link Service Executable
 $(SERVICE_BIN): $(SERVICE_OBJ) $(COMMON_OBJ)
 	@echo "[LINK] Forging chaos_service..."
-	$(LD) $^ $(LDFLAGS) -o $@
+	$(LD) $(LDFLAGS) $^ -o $@
 
 # Link Client Executable
 $(CLIENT_BIN): $(CLIENT_OBJ) $(COMMON_OBJ)
 	@echo "[LINK] Forging chaos_client..."
-	$(LD) $^ $(LDFLAGS) -o $@
+	$(LD) $(LDFLAGS) $^ -o $@
 
 clean:
 	@echo "[CLEAN] Purging runtime output structures..."
-	rm -rf bin/ build/ data/
-EOF
+	rm -rf bin/ build/
+	rm -f *.dat *.log
