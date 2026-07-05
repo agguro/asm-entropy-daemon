@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Guerreiro Roberto"
+    given-names: "Aguas"
+    orcid: "https://orcid.org/0009-0007-5934-5862"
+title: "Chaos Entropy Engine: High-Performance Assembly PRNG"
+version: 1.0.0
+date-released: 2026-07-05
+license: Apache-2.0
+repository-code: "https://github.com/agguro/asm-entropy-daemon"
+keywords:
+  - "Assembly"
+  - "PRNG"
+  - "Entropy"
+  - "High-Performance Computing"
+  - "TestU01"
+  - "Shared Memory"
+  - "IPC"
+abstract: >
+  A high-throughput, low-latency PRNG engine implemented in x86_64 assembly.
+  Features a slot-based IPC protocol via shared memory, modular backend support,
+  and stress-tested statistical validity. Designed for GPU-accelerated workloads
+  and Monte Carlo simulations.
