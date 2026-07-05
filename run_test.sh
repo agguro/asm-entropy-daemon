@@ -19,23 +19,29 @@
 
 set -e
 
+# Path definitions based on the release build structure
+DAEMON="./bin/release/x86_64/chaos_service"
+CLIENT="./bin/release/x86_64/chaos_client"
+
 echo "============================================================"
 echo "LAUNCHING SYSTEM DAEMON INTEGRATION SWEEP"
 echo "============================================================"
 
-# Trigger pristine compilation
-make clean
-make
+# Verification that binaries exist
+if [ ! -f "$DAEMON" ] || [ ! -f "$CLIENT" ]; then
+    echo "ERROR: Binaries not found in bin/release/x86_64/. Run ./build.sh first."
+    exit 1
+fi
 
 echo -e "\n[STEP 1/2] Initializing Chaos PRNG Engine Daemon in background..."
-./bin/x86_64/chaos_service &
+$DAEMON &
 DAEMON_PID=$!
 
 # Allow the background shared-memory state to bind cleanly
 sleep 0.5
 
 echo -e "\n[STEP 2/2] Firing high-speed assembly client interrogation vector..."
-if ./bin/x86_64/chaos_client; then
+if $CLIENT; then
     echo -e "\n>>> SUCCESS: IPC pipeline, slots mapping, and entropy collection verified."
     kill $DAEMON_PID 2>/dev/null || true
     exit 0

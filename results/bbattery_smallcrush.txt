@@ -1,11 +1,12 @@
-agguro@vds:~/projects/as-mersenne-twister/05-chaos_stresstest (main)
-→ ./run_test.sh 
---- Chaos Engine Stress Test Runner ---
-[1/5] Oude processen stoppen...
-[3/5] Chaos Service opstarten...
-[4/5] Start Stress Test (SmallCrush)...
-------------------------------------------------
---- STARTING SMALLCRUSH TEST ON ASM-SERVICE ---
+--- TEST METADATA ---
+Hostname: vds
+CPU Model: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
+CPU Cores: 16
+RAM: 62Gi
+---------------------
+--- STARTING THE SMALLCRUSH BATTLE - ASM MT64 vs TESTU01 ---
+Mapping: 64 slots, split-phase 32-bit consumption.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                  Starting SmallCrush
                  Version: TestU01 1.2.3
@@ -29,12 +30,12 @@ smarsa_BirthdaySpacings test:
 
 ----------------------------------------------------
 Total expected number = N*Lambda      :      27.11
-Total observed number                 :      33
-p-value of test                       :    0.15
+Total observed number                 :      93
+p-value of test                       : 3.9e-23    *****
 
 
 -----------------------------------------------
-CPU time used                    :  00:00:21.19
+CPU time used                    :  00:00:00.96
 
 Generator state:
 
@@ -67,21 +68,21 @@ smultin_Multinomial test:
 Test Results for Collisions
 
 Expected number of collisions = Mu    :     2909.25
-Observed number of collisions         :     2997
-p-value of test                       :    0.05
+Observed number of collisions         :     2872
+p-value of test                       :    0.75
 
 -----------------------------
 Total number of cells containing j balls
 
-  j =  0                              :       4289970293
-  j =  1                              :          4994006
-  j =  2                              :             2997
-  j =  3                              :                0
+  j =  0                              :       4289970168
+  j =  1                              :          4994257
+  j =  2                              :             2870
+  j =  3                              :                1
   j =  4                              :                0
   j =  5                              :                0
 
 -----------------------------------------------
-CPU time used                    :  00:00:20.49
+CPU time used                    :  00:00:00.65
 
 Generator state:
 
@@ -101,11 +102,11 @@ sknuth_Gap test:
 
 -----------------------------------------------
 Number of degrees of freedom          : 1114
-Chi-square statistic                  : 1049.08
-p-value of test                       :    0.92
+Chi-square statistic                  : 1053.62
+p-value of test                       :    0.90
 
 -----------------------------------------------
-CPU time used                    :  00:01:44.71
+CPU time used                    :  00:00:01.04
 
 Generator state:
 
@@ -125,11 +126,11 @@ sknuth_SimpPoker test:
 
 -----------------------------------------------
 Number of degrees of freedom          :   19
-Chi-square statistic                  :   10.33
-p-value of test                       :    0.94
+Chi-square statistic                  :   12.87
+p-value of test                       :    0.85
 
 -----------------------------------------------
-CPU time used                    :  00:00:52.33
+CPU time used                    :  00:00:00.52
 
 Generator state:
 
@@ -149,11 +150,11 @@ sknuth_CouponCollector test:
 
 -----------------------------------------------
 Number of degrees of freedom          :   44
-Chi-square statistic                  :   47.70
-p-value of test                       :    0.32
+Chi-square statistic                  :   39.96
+p-value of test                       :    0.65
 
 -----------------------------------------------
-CPU time used                    :  00:00:50.49
+CPU time used                    :  00:00:00.50
 
 Generator state:
 
@@ -176,17 +177,17 @@ sknuth_MaxOft test:
 
 -----------------------------------------------
 Number of degrees of freedom          : 99999
-Chi-square statistic                  : 1.00e+5
-p-value of test                       :    0.29
+Chi-square statistic                  :99728.80
+p-value of test                       :    0.73
 
 
 -----------------------------------------------
-Anderson-Darling statistic            :    0.28
-p-value of test                       :    0.72
+Anderson-Darling statistic            :    0.73
+p-value of test                       :    0.27
 
 
 -----------------------------------------------
-CPU time used                    :  00:00:24.73
+CPU time used                    :  00:00:00.43
 
 Generator state:
 
@@ -206,11 +207,11 @@ svaria_WeightDistrib test:
 
 -----------------------------------------------
 Number of degrees of freedom          :   41
-Chi-square statistic                  :   43.96
-p-value of test                       :    0.35
+Chi-square statistic                  :   49.20
+p-value of test                       :    0.18
 
 -----------------------------------------------
-CPU time used                    :  00:01:44.69
+CPU time used                    :  00:00:01.04
 
 Generator state:
 
@@ -230,11 +231,11 @@ smarsa_MatrixRank test:
 
 -----------------------------------------------
 Number of degrees of freedom          :    3
-Chi-square statistic                  :    9.38
-p-value of test                       :    0.02
+Chi-square statistic                  :    1.07
+p-value of test                       :    0.79
 
 -----------------------------------------------
-CPU time used                    :  00:00:14.99
+CPU time used                    :  00:00:00.30
 
 Generator state:
 
@@ -256,11 +257,11 @@ sstring_HammingIndep test:
 Counters with expected numbers >= 10
 -----------------------------------------------
 Number of degrees of freedom          : 2209
-Chi-square statistic                  : 2182.42
-p-value of test                       :    0.65
+Chi-square statistic                  : 2287.15
+p-value of test                       :    0.12
 
 -----------------------------------------------
-CPU time used                    :  00:01:01.39
+CPU time used                    :  00:00:00.62
 
 Generator state:
 
@@ -283,44 +284,44 @@ swalk_RandomWalk1 test:
 Test on the values of the Statistic H
 
 Number of degrees of freedom          :   52
-ChiSquare statistic                   :   57.05
-p-value of test                       :    0.29
+ChiSquare statistic                   :   37.12
+p-value of test                       :    0.94
 
 
 -----------------------------------------------
 Test on the values of the Statistic M
 
 Number of degrees of freedom          :   52
-ChiSquare statistic                   :   48.78
-p-value of test                       :    0.60
+ChiSquare statistic                   :   89.08
+p-value of test                       :  1.0e-3
 
 
 -----------------------------------------------
 Test on the values of the Statistic J
 
 Number of degrees of freedom          :   75
-ChiSquare statistic                   :   83.65
-p-value of test                       :    0.23
+ChiSquare statistic                   :   63.26
+p-value of test                       :    0.83
 
 
 -----------------------------------------------
 Test on the values of the Statistic R
 
 Number of degrees of freedom          :   44
-ChiSquare statistic                   :   31.87
-p-value of test                       :    0.91
+ChiSquare statistic                   :   46.95
+p-value of test                       :    0.35
 
 
 -----------------------------------------------
 Test on the values of the Statistic C
 
 Number of degrees of freedom          :   26
-ChiSquare statistic                   :   10.57
-p-value of test                       :    0.9968
+ChiSquare statistic                   :   15.67
+p-value of test                       :    0.94
 
 
 -----------------------------------------------
-CPU time used                    :  00:00:10.25
+CPU time used                    :  00:00:00.46
 
 Generator state:
 
@@ -333,12 +334,18 @@ Generator state:
  Version:          TestU01 1.2.3
  Generator:        Asm-MT64-Chaos
  Number of statistics:  15
- Total CPU time:   00:07:45.31
+ Total CPU time:   00:00:06.56
+ The following tests gave p-values outside [0.001, 0.9990]:
+ (eps  means a value < 1.0e-300):
+ (eps1 means a value < 1.0e-15):
 
- All tests were passed
+       Test                          p-value
+ ----------------------------------------------
+  1  BirthdaySpacings               3.9e-23
+ ----------------------------------------------
+ All other tests were passed
 
 
 
-------------------------------------------------
-[5/5] Test voltooid. Opruimen...
-Klaar.
+
+Test session completed.
