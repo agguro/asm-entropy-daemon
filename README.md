@@ -8,12 +8,13 @@ The core generation architecture has been exhaustively evaluated and validated a
 
 ## Architectural Layout
 
-  [ Client 1 ] <--- Shared Memory (MMAP) ---> [ Slot 0 ] ---> 
-  
-  [ Client 2 ] <--- Shared Memory (MMAP) ---> [ Slot 1 ] ---> [ asm-entropy-daemon ] --->  [ TestU01 Battery Gates ] --- (SmallCrush / Crush / BigCrush)
-  
-  [ Client N ] <--- Shared Memory (MMAP) ---> [ Slot N ] --->
-                                                      
+```text
+  [ Client 1 ] ────┐
+                   │                                                                                                       
+  [ Client 2 ] ────┼────> Shared Memory (MMAP) ──> [ Slot 0..63 ] ──> [ asm-entropy-daemon ] ──> [ TestU01 Battery Gates ]
+                   │                                                                              (SmallCrush / Crush / BigCrush)
+  [ Client N ] ────┘
+                                                       
 
 * Host Service Daemon: Monitors incoming request flags via shared memory segments, manages MT19937-64 state, and delivers results with nanosecond-level latency.
 * Low-Overhead Client Logic: A lightweight assembly diagnostic tool designed to bind directly to the shared memory channels, stream random 64-bit blocks, and process real-time hexadecimal output metrics.
@@ -35,33 +36,30 @@ The asm-entropy-daemon utilizes a "Revolver" architecture to maximize throughput
 ## Workspace Layout
 
 .
-├── bin/                    # Compiled native systems binaries
-│   └── x86_64/
-├── build/                  # Transient assembly object outputs
-├── src/                    # Core System V assembly source files
-│   └── x86_64/
-│       ├── common/         # Shared diagnostic formatting vectors
-│       ├── service/        # Core server SHM framework
-│       └── client/         # Interprocess channel interfaces
-├── test/                   # Regression testing & TestU01 suites
-│   ├── run_tests.sh        # E2E integration verification script
-│   └── stress/             # TestU01 harness files and logs
-└── Makefile                # Production build definitions
+├── CITATION.cff           # Academic and software citation metadata
+├── build.sh               # Build orchestrator & dependency checker
+├── external/              # Submodules (e.g., TestU01-2009)
+├── results/               # Empirical TestU01 statistical reports
+├── x86_64/                # Core flat system assembly & C test harnesses
+│   ├── chaos_service.s    # Core server SHM framework & MT19937-64 engine
+│   ├── chaos_client.s     # Interprocess channel & circular buffer client template
+│   ├── print_hex64.s      # Zero-overhead 64-bit hex formatting utility
+│   ├── test_bbattery_smallcrush.c # TestU01 SmallCrush test harness
+│   ├── test_bbattery_crush.c      # TestU01 Crush test harness
+│   └── test_bbattery_bigcrush.c   # TestU01 BigCrush test harness
+└── Makefile               # Production build definitions
 
 ---
 
 ## Setup & Build
 
-To initialize submodules (such as TestU01), build the daemon and client binaries, and execute the automated verification test run:
+To initialize submodules, check dependencies, build the daemon and client binaries, and execute the automated verification test run:
 
-# 1. Initialize and update submodules
-git submodule update --init --recursive
+# 1. Build and run via the orchestrator script
+./build.sh debug
 
-# 2. Build the engine and test suites
-make
-
-# 3. Run automated verification test suite
-./test/run_tests.sh
+# 2. Alternatively, run the TestU01 verification test suite directly via Makefile
+make test
 
 ---
 
@@ -77,3 +75,4 @@ While the asm-entropy-daemon is designed for low-overhead operation, it is optim
 ## License
 
 This system is licensed under the Apache License, Version 2.0.
+EOF

@@ -1,8 +1,8 @@
 --- TEST METADATA ---
-Hostname: vds
-CPU Model: Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz
-CPU Cores: 16
-RAM: 62Gi
+Hostname: tux
+CPU Model: 13th Gen Intel(R) Core(TM) i5-1335U
+CPU Cores: 12
+RAM: 31Gi
 ---------------------
 --- STARTING THE SMALLCRUSH BATTLE - ASM MT64 vs TESTU01 ---
 Mapping: 64 slots, split-phase 32-bit consumption.
@@ -14,7 +14,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -30,12 +30,12 @@ smarsa_BirthdaySpacings test:
 
 ----------------------------------------------------
 Total expected number = N*Lambda      :      27.11
-Total observed number                 :      93
-p-value of test                       : 3.9e-23    *****
+Total observed number                 :      96
+p-value of test                       : 8.8e-25    *****
 
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.96
+CPU time used                    :  00:00:01.21
 
 Generator state:
 
@@ -46,7 +46,7 @@ Generator state:
 Test sknuth_Collision calling smultin_Multinomial
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -68,21 +68,21 @@ smultin_Multinomial test:
 Test Results for Collisions
 
 Expected number of collisions = Mu    :     2909.25
-Observed number of collisions         :     2872
-p-value of test                       :    0.75
+Observed number of collisions         :     2870
+p-value of test                       :    0.76
 
 -----------------------------
 Total number of cells containing j balls
 
-  j =  0                              :       4289970168
-  j =  1                              :          4994257
-  j =  2                              :             2870
+  j =  0                              :       4289970166
+  j =  1                              :          4994261
+  j =  2                              :             2868
   j =  3                              :                1
   j =  4                              :                0
   j =  5                              :                0
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.65
+CPU time used                    :  00:00:00.53
 
 Generator state:
 
@@ -90,7 +90,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -102,11 +102,11 @@ sknuth_Gap test:
 
 -----------------------------------------------
 Number of degrees of freedom          : 1114
-Chi-square statistic                  : 1053.62
-p-value of test                       :    0.90
+Chi-square statistic                  : 1151.82
+p-value of test                       :    0.21
 
 -----------------------------------------------
-CPU time used                    :  00:00:01.04
+CPU time used                    :  00:00:01.87
 
 Generator state:
 
@@ -114,7 +114,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -126,11 +126,11 @@ sknuth_SimpPoker test:
 
 -----------------------------------------------
 Number of degrees of freedom          :   19
-Chi-square statistic                  :   12.87
-p-value of test                       :    0.85
+Chi-square statistic                  :   24.51
+p-value of test                       :    0.18
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.52
+CPU time used                    :  00:00:00.92
 
 Generator state:
 
@@ -138,7 +138,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -150,11 +150,11 @@ sknuth_CouponCollector test:
 
 -----------------------------------------------
 Number of degrees of freedom          :   44
-Chi-square statistic                  :   39.96
-p-value of test                       :    0.65
+Chi-square statistic                  :   35.38
+p-value of test                       :    0.82
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.50
+CPU time used                    :  00:00:00.91
 
 Generator state:
 
@@ -162,7 +162,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -177,17 +177,17 @@ sknuth_MaxOft test:
 
 -----------------------------------------------
 Number of degrees of freedom          : 99999
-Chi-square statistic                  :99728.80
-p-value of test                       :    0.73
+Chi-square statistic                  : 1.00e+5
+p-value of test                       :    0.24
 
 
 -----------------------------------------------
-Anderson-Darling statistic            :    0.73
-p-value of test                       :    0.27
+Anderson-Darling statistic            :   0.074
+p-value of test                       :    0.93
 
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.43
+CPU time used                    :  00:00:00.65
 
 Generator state:
 
@@ -195,7 +195,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -207,11 +207,11 @@ svaria_WeightDistrib test:
 
 -----------------------------------------------
 Number of degrees of freedom          :   41
-Chi-square statistic                  :   49.20
-p-value of test                       :    0.18
+Chi-square statistic                  :   35.85
+p-value of test                       :    0.70
 
 -----------------------------------------------
-CPU time used                    :  00:00:01.04
+CPU time used                    :  00:00:01.87
 
 Generator state:
 
@@ -219,7 +219,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -231,11 +231,11 @@ smarsa_MatrixRank test:
 
 -----------------------------------------------
 Number of degrees of freedom          :    3
-Chi-square statistic                  :    1.07
-p-value of test                       :    0.79
+Chi-square statistic                  :    4.09
+p-value of test                       :    0.25
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.30
+CPU time used                    :  00:00:00.48
 
 Generator state:
 
@@ -243,7 +243,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -257,11 +257,11 @@ sstring_HammingIndep test:
 Counters with expected numbers >= 10
 -----------------------------------------------
 Number of degrees of freedom          : 2209
-Chi-square statistic                  : 2287.15
-p-value of test                       :    0.12
+Chi-square statistic                  : 2255.36
+p-value of test                       :    0.24
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.62
+CPU time used                    :  00:00:01.09
 
 Generator state:
 
@@ -269,7 +269,7 @@ Generator state:
 
 
 ***********************************************************
-HOST = vds, Linux
+HOST = tux, Linux
 
 Asm-MT64-Chaos
 
@@ -284,44 +284,44 @@ swalk_RandomWalk1 test:
 Test on the values of the Statistic H
 
 Number of degrees of freedom          :   52
-ChiSquare statistic                   :   37.12
-p-value of test                       :    0.94
+ChiSquare statistic                   :   43.10
+p-value of test                       :    0.81
 
 
 -----------------------------------------------
 Test on the values of the Statistic M
 
 Number of degrees of freedom          :   52
-ChiSquare statistic                   :   89.08
-p-value of test                       :  1.0e-3
+ChiSquare statistic                   :   45.98
+p-value of test                       :    0.71
 
 
 -----------------------------------------------
 Test on the values of the Statistic J
 
 Number of degrees of freedom          :   75
-ChiSquare statistic                   :   63.26
-p-value of test                       :    0.83
+ChiSquare statistic                   :   61.27
+p-value of test                       :    0.87
 
 
 -----------------------------------------------
 Test on the values of the Statistic R
 
 Number of degrees of freedom          :   44
-ChiSquare statistic                   :   46.95
-p-value of test                       :    0.35
+ChiSquare statistic                   :   46.37
+p-value of test                       :    0.37
 
 
 -----------------------------------------------
 Test on the values of the Statistic C
 
 Number of degrees of freedom          :   26
-ChiSquare statistic                   :   15.67
-p-value of test                       :    0.94
+ChiSquare statistic                   :   30.11
+p-value of test                       :    0.26
 
 
 -----------------------------------------------
-CPU time used                    :  00:00:00.46
+CPU time used                    :  00:00:00.55
 
 Generator state:
 
@@ -334,14 +334,14 @@ Generator state:
  Version:          TestU01 1.2.3
  Generator:        Asm-MT64-Chaos
  Number of statistics:  15
- Total CPU time:   00:00:06.56
+ Total CPU time:   00:00:10.11
  The following tests gave p-values outside [0.001, 0.9990]:
  (eps  means a value < 1.0e-300):
  (eps1 means a value < 1.0e-15):
 
        Test                          p-value
  ----------------------------------------------
-  1  BirthdaySpacings               3.9e-23
+  1  BirthdaySpacings               8.8e-25
  ----------------------------------------------
  All other tests were passed
 
