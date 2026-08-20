@@ -8,14 +8,13 @@ The core generation architecture has been exhaustively evaluated and validated a
 
 ## Architectural Layout
 
-  [ Client 1 ] <--- Shared Memory (MMAP) ---> [ Slot 0 ]
+  [ Client 1 ] <--- Shared Memory (MMAP) ---> [ Slot 0 ] ---> 
   
-  [ Client 2 ] <--- Shared Memory (MMAP) ---> [ Slot 1 ] ---> [ asm-entropy-daemon ]
+  [ Client 2 ] <--- Shared Memory (MMAP) ---> [ Slot 1 ] ---> [ asm-entropy-daemon ] --->  [ TestU01 Battery Gates ] --- (SmallCrush / Crush / BigCrush)
   
-  [ Client N ] <--- Shared Memory (MMAP) ---> [ Slot N ]            |
+  [ Client N ] <--- Shared Memory (MMAP) ---> [ Slot N ] --->             |
                                                                     v
-                                                       [ TestU01 Battery Gates ]
-                                                     (SmallCrush / Crush / BigCrush)
+                                                      
 
 * Host Service Daemon: Monitors incoming request flags via shared memory segments, manages MT19937-64 state, and delivers results with nanosecond-level latency.
 * Low-Overhead Client Logic: A lightweight assembly diagnostic tool designed to bind directly to the shared memory channels, stream random 64-bit blocks, and process real-time hexadecimal output metrics.
