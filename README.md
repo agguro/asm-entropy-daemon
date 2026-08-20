@@ -9,7 +9,9 @@ The core generation architecture has been exhaustively evaluated and validated a
 ## Architectural Layout
 
   [ Client 1 ] <--- Shared Memory (MMAP) ---> [ Slot 0 ]
+  
   [ Client 2 ] <--- Shared Memory (MMAP) ---> [ Slot 1 ] ---> [ asm-entropy-daemon ]
+  
   [ Client N ] <--- Shared Memory (MMAP) ---> [ Slot N ]            |
                                                                     v
                                                        [ TestU01 Battery Gates ]
