@@ -8,7 +8,7 @@ BUILD_TYPE="${1:-debug}"
 
 echo "=== [1/3] Checking Git submodules ==="
 if [ -f ".gitmodules" ]; then
-    # Check of de submodule map leeg is, zo ja: initialiseer en update
+    # Check if the submodule directory is empty; if so, initialize and update
     if [ ! -d "external/TestU01-2009" ] || [ -z "$(ls -A external/TestU01-2009)" ]; then
         echo "Submodules missing or empty. Initializing..."
         git submodule update --init --recursive
@@ -28,5 +28,9 @@ for tool in gcc as ld make autoconf automake; do
 done
 echo "All build tools are present."
 
-echo "now run make"
+echo "=== [3/3] Building binaries via Makefile ==="
+make BUILD_TYPE="${BUILD_TYPE}" all
 
+echo "Build successful! Binaries are located in build/x86_64/${BUILD_TYPE}/"
+EOF
+chmod +x build.sh
