@@ -12,8 +12,7 @@ The core generation architecture has been exhaustively evaluated and validated a
   
   [ Client 2 ] <--- Shared Memory (MMAP) ---> [ Slot 1 ] ---> [ asm-entropy-daemon ] --->  [ TestU01 Battery Gates ] --- (SmallCrush / Crush / BigCrush)
   
-  [ Client N ] <--- Shared Memory (MMAP) ---> [ Slot N ] --->             |
-                                                                    v
+  [ Client N ] <--- Shared Memory (MMAP) ---> [ Slot N ] --->
                                                       
 
 * Host Service Daemon: Monitors incoming request flags via shared memory segments, manages MT19937-64 state, and delivers results with nanosecond-level latency.
