@@ -52,12 +52,9 @@ stress_harness:
 
 test:
 	$(MAKE) all BUILD_TYPE=debug
-	@if [ -f "test/stress_test.sh" ]; then \
-		chmod +x stress_test/stress_test.sh && ./test/stress_test.sh; \
-	else \
-		echo "ERROR: stress_test/stress_test.sh not found!"; \
-		exit 1; \
-	fi
+	@cd test
+	./stress_test.sh
+	@echo "results of tests can be found in test/results/" 
 
 clean:
 	@echo "[!] Cleaning build artifacts and external libraries..."

@@ -2,7 +2,7 @@
 # Description: Scientific validation and stress testing.
 set -e
 
-DAEMON="./../build/x86_64/debug/chaos_service"
+DAEMON="../build/x86_64/debug/chaos_service"
 RESULT_DIR="./results"
 mkdir -p "$RESULT_DIR"
 

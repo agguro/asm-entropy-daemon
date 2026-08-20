@@ -32,5 +32,4 @@ echo "=== [3/3] Building binaries via Makefile ==="
 make BUILD_TYPE="${BUILD_TYPE}" all
 
 echo "Build successful! Binaries are located in build/x86_64/${BUILD_TYPE}/"
-EOF
-chmod +x build.sh
+
