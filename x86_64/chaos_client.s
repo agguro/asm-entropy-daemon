@@ -1,20 +1,5 @@
 # =============================================================================
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
-# Name: chaos_service.s
-# Author: Aguas Guerreiro Roberto [agguro]
-# Date: 2026-07-05
-# Description: Chaos Logger — SHM → MMAP Circular Buffer
+# Chaos Logger — SHM → MMAP Circular Buffer
 # =============================================================================
 # Description:
 #   A high‑throughput logger that continuously reads random 64‑bit values from
@@ -75,73 +60,119 @@
 .globl _start
 
 _start:
-    # 1. Setup SHM and Buffer (same as before)
-    movq $2, %rax; leaq shm_path(%rip), %rdi; movq $2, %rsi; syscall
-    movq %rax, %r8
-    movq $9, %rax; xorq %rdi, %rdi; movq $4096, %rsi; movq $3, %rdx; movq $1, %r10; movq %r8, %r8; xorq %r9, %r9; syscall
-    movq %rax, %r12             # r12 = SHM Base
+    # 1. Open bestaande SHM (Service moet al draaien!)
+    movq $2, %rax               # sys_open
+    leaq shm_path(%rip), %rdi
+    movq $2, %rsi               # O_RDWR
+    syscall
+    testq %rax, %rax
+    js error_exit
+    movq %rax, %r8              # FD van SHM
 
-    movq $2, %rax; leaq output_path(%rip), %rdi; movq $66, %rsi; movq $0666, %rdx; syscall
-    movq %rax, %r9
-    movq $77, %rax; movq %r9, %rdi; movq $8000, %rsi; syscall
-    movq $9, %rax; xorq %rdi, %rdi; movq $8000, %rsi; movq $3, %rdx; movq $1, %r10; movq %r9, %r8; xorq %r9, %r9; syscall
-    movq %rax, %r13             # r13 = Buffer Base
+    # Map de 4096 bytes van de Service SHM
+    movq $9, %rax               # sys_mmap
+    xorq %rdi, %rdi
+    movq $4096, %rsi
+    movq $3, %rdx               # PROT_READ | PROT_WRITE
+    movq $1, %r10               # MAP_SHARED
+    movq %r8, %r8
+    xorq %r9, %r9
+    syscall
+    testq %rax, %rax
+    js error_exit
+    movq %rax, %r12             # %r12 = SHM Base Pointer
 
-    # Loop Counters
-    movq $0, %r15               # Current iteration (0 to 100,000)
-    movq $0, %r14               # Circular index (0 to 999)
+    # 2. Open/Maak de Output Buffer in /tmp
+    movq $2, %rax               # sys_open
+    leaq output_path(%rip), %rdi
+    movq $66, %rsi              # O_RDWR | O_CREAT (64 + 2)
+    movq $0666, %rdx            # rw-rw-rw-
+    syscall
+    testq %rax, %rax
+    js error_exit
+    movq %rax, %r9              # FD van Buffer
+
+    # Forceer de grootte naar 8000 bytes (1000 * 8 bytes)
+    movq $77, %rax              # sys_ftruncate
+    movq %r9, %rdi
+    movq $8000, %rsi            
+    syscall
+
+    # Map de buffer file
+    movq $9, %rax               # sys_mmap
+    xorq %rdi, %rdi
+    movq $8000, %rsi
+    movq $3, %rdx
+    movq $1, %r10               # MAP_SHARED
+    movq %r9, %r8
+    xorq %r9, %r9
+    syscall
+    testq %rax, %rax
+    js error_exit
+    movq %rax, %r13             # %r13 = Buffer Base Pointer
+
+    # Initialisatie
+    movq 4088(%r12), %r14       # Eerste heartbeat waarde
+    xorq %r15, %r15             # Schrijf-index (0-999)
+    xorq %rcx, %rcx             # Stagnatie teller voor watchdog
 
 .main_loop:
-    # --- 1. Find Slot ---
-    xorq %rbx, %rbx
+    # --- Watchdog Sectie ---
+    movq 4088(%r12), %rax
+    cmpq %r14, %rax             # Is de service nog aan het tikken?
+    jne .service_alive
+    
+    incq %rcx
+    cmpq $5000000, %rcx         # Timeout drempel
+    ja error_exit
+    jmp .find_slot
+
+.service_alive:
+    movq %rax, %r14             # Update heartbeat
+    xorq %rcx, %rcx             # Reset stagnatie
+
+.find_slot:
+    xorq %rbx, %rbx             # Scan slots 0-63
 .scan_loop:
     movq %rbx, %rax
-    shlq $6, %rax
-    leaq (%r12, %rax), %rdi     # rdi = flag address
+    shlq $6, %rax               # Index * 64 bytes per slot
+    leaq (%r12, %rax), %rdi     # Adres van de vlag
 
+    # Claim slot: probeer -1 te vervangen door 0
     movq $-1, %rax
     movq $0, %rdx
     lock cmpxchgq %rdx, (%rdi)
-    jz .wait_for_service
-    
+    jz .wait_for_service        # Gelukt!
+
     incq %rbx
     andq $63, %rbx
-    pause                       # Polite spin
+    pause
+    testq $63, %rbx             # Na een volle ronde (64) even watchdog checken
+    jz .main_loop
     jmp .scan_loop
 
 .wait_for_service:
-    # --- 2. Wait for Completion ---
+    # Wacht tot service data plaatst en vlag terugzet naar -1
+    pause
     cmpq $-1, (%rdi)
     jne .wait_for_service
 
-    # --- 3. Store Data ---
+    # Data ophalen (offset +8)
     movq 8(%rdi), %rax
-    movq %rax, (%r13, %r14, 8)
+    
+    # Schrijf naar de 1000-getallen cirkel-buffer
+    movq %rax, (%r13, %r15, 8)
 
-    # --- "Slow Enough" Throttle (Optional) ---
-    # Un-comment the next 3 lines if you need it even slower
-    # movq $50, %rcx
-    # .delay: loop .delay
-
-    # --- 4. Loop Logic ---
-    incq %r14
-    cmpq $1000, %r14
-    jl .no_wrap
-    xorq %r14, %r14             # Reset circular index
-.no_wrap:
-
+    # Update index en wrap around bij 1000
     incq %r15
-    cmpq $100000, %r15          # Check limit
-    jl .main_loop
+    cmpq $1000, %r15
+    jne .main_loop
+    xorq %r15, %r15             
+    jmp .main_loop
 
-.done_exit:
+error_exit:
     movq $60, %rax              # sys_exit
     xorq %rdi, %rdi
-    syscall
-
-.error_exit:
-    movq $60, %rax
-    movq $1, %rdi
     syscall
 
 .size _start, . - _start

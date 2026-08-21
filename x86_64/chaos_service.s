@@ -37,151 +37,267 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+# =============================================================================
+# MT19937-64 Chaos Service — The High Performance Engine
+# =============================================================================
+# Description:
+#   A high‑throughput MT19937‑64 random number service using shared memory,
+#   structured as a clean “engine + slots” design:
+#
+#     • MT19937‑64 implemented as separate init/twist/rand functions
+#     • 64 fixed‑size request slots (64 bytes each) in /dev/shm/chaos_shm
+#     • Heartbeat counter for liveness monitoring
+#     • Lockdown phase to clear all shared memory before use
+#     • Busy‑wait + pause loop for low‑latency response
+#
+#   Intended use:
+#     - Local processes (or a GPU feeder) request random numbers by writing
+#       to shared memory slots.
+#     - The service continuously scans slots, generates MT19937‑64 values,
+#       and delivers them with minimal latency.
+#
+# Shared Memory Layout (4 KB total):
+#   File: /dev/shm/chaos_shm
+#
+#   Slots (0..63), each 64 bytes:
+#     base_i = shm_base + i * 64
+#
+#       offset 0:  slot_flag (int64)
+#                  -  0  = request pending (service should generate)
+#                  - -1  = slot free / idle
+#
+#       offset 8:  result (uint64)
+#                  - one 64‑bit random value per request
+#
+#       offset 16–63: reserved for future use (e.g. batch size, engine ID, etc.)
+#
+#   Heartbeat:
+#       offset 4088: uint64 heartbeat counter
+#                    - incremented every main loop iteration
+#                    - clients can poll this to verify the service is alive
+#
+# Protocol (per slot):
+#   1. Client waits until slot_flag == -1 (slot free).
+#   2. Client writes 0 to slot_flag to request a new random value.
+#   3. Service loop:
+#        - scans slots in round‑robin (0..63)
+#        - when it sees flag == 0:
+#            * calls mt_rand_64() to get a 64‑bit random
+#            * writes result to offset +8
+#            * sets flag back to -1
+#   4. Client waits until flag == -1 again, then reads result at offset +8.
+#
+# Build:
+#   as chaos_engine.s -o chaos_engine.o
+#   ld chaos_engine.o -o chaos_engine
+#
+# Notes:
+#   - Uses RDRAND once at startup to seed MT19937‑64.
+#   - MT state (312 × 64‑bit) lives in mt_state (BSS).
+#   - mt_index in .data tracks the current position in the MT state array.
+#   - All shared memory is zeroed once (“lockdown”) before slots are released.
+#   - Heartbeat is stored at offset 4088 (last 8 bytes of the 4 KB region).
+# =============================================================================
 
 .section .rodata
-    shm_path:    .asciz "/dev/shm/chaos_shm"
-    output_path: .asciz "/tmp/chaos_buffer.bin"
+    shm_path: .asciz "/dev/shm/chaos_shm"
+
+.section .data
+    .align 8
+    mt_index: .quad 313           # In .data omdat het een startwaarde heeft
+
+.section .bss
+    .align 16
+    mt_state: .space 2496         # 312 * 8 bytes
 
 .section .text
 .globl _start
 
 _start:
-    # -------------------------------------------------------------------------
-    # 1. Establish Shared Memory Connection (Chaos Engine IPC)
-    # -------------------------------------------------------------------------
-    movq $2, %rax                   # System call: sys_open (NR 2)
-    leaq shm_path(%rip), %rdi       # Pointer to shared memory path string
-    movq $2, %rsi                   # Flags: O_RDWR (Read/Write access)
-    xorq %rdx, %rdx                 # Mode: 0 (existing file descriptor open)
-    syscall                         # Open connection
-    testq %rax, %rax                # Validate file descriptor
-    js .error_exit                  # Jump on failure
-    movq %rax, %r8                  # Store shared memory file descriptor in %r8
+    # 1. Open/Create de Shared Memory file
+    movq $2, %rax               # sys_open
+    leaq shm_path(%rip), %rdi
+    movq $66, %rsi              # O_RDWR | O_CREAT
+    movq $0666, %rdx            # rw-rw-rw-
+    syscall
+    testq %rax, %rax
+    js .error_exit
+    movq %rax, %r8              # FD in %r8
 
-    # Map the 4 KB shared memory region into client address space
-    movq $9, %rax                   # System call: sys_mmap (NR 9)
-    xorq %rdi, %rdi                 # Address hint: NULL (kernel decides)
-    movq $4096, %rsi                # Length: 4096 bytes (1 virtual memory page)
-    movq $3, %rdx                   # Protection: PROT_READ (1) | PROT_WRITE (2)
-    movq $1, %r10                   # Flags: MAP_SHARED (changes visible globally)
-    movq %r8, %r8                   # File descriptor argument
-    xorq %r9, %r9                   # Offset: 0 bytes from start
-    syscall                         # Map segment
-    testq %rax, %rax                # Validate return pointer
-    js .error_exit                  # Jump on failure
-    movq %rax, %r12                 # %r12 = Absolute base pointer of Chaos SHM
+    # 2. Stel de grootte in (4096 bytes)
+    movq $77, %rax              # sys_ftruncate
+    movq %r8, %rdi
+    movq $4096, %rsi
+    syscall
 
-    # -------------------------------------------------------------------------
-    # 2. Establish Circular Output Buffer File (/tmp/chaos_buffer.bin)
-    # -------------------------------------------------------------------------
-    movq $2, %rax                   # System call: sys_open (NR 2)
-    leaq output_path(%rip), %rdi    # Pointer to output path string
-    movq $66, %rsi                  # Flags: O_RDWR (2) | O_CREAT (64) = 66
-    movq $0666, %rdx                # File permissions: rw-rw-rw- (octal 0666)
-    syscall                         # Create/open file
-    testq %rax, %rax                # Validate file descriptor
-    js .error_exit                  # Jump on failure
-    movq %rax, %r9                  # Store output file descriptor in %r9
+    # 3. Map de file in het geheugen
+    movq $9, %rax               # sys_mmap
+    xorq %rdi, %rdi
+    movq $4096, %rsi
+    movq $3, %rdx               # PROT_READ | PROT_WRITE
+    movq $1, %r10               # MAP_SHARED
+    movq %r8, %r8
+    xorq %r9, %r9
+    syscall
+    testq %rax, %rax
+    js .error_exit
+    movq %rax, %r12             # %r12 = SHM Base Pointer
 
-    # Enforce exact output size of 8000 bytes (1000 items * 8 bytes)
-    movq $77, %rax                  # System call: sys_ftruncate (NR 77)
-    movq %r9, %rdi                  # File descriptor argument
-    movq $8000, %rsi                # Target size: 8000 bytes
-    syscall                         # Truncate file structure
+    # 4. Lockdown: initialiseer geheugen op 0
+    xorq %rcx, %rcx
+.lockdown:
+    movq $0, (%r12, %rcx, 8)
+    incq %rcx
+    cmpq $512, %rcx             # 512 * 8 = 4096
+    jne .lockdown
 
-    # Map the output buffer into process memory for zero-copy file I/O
-    movq $9, %rax                   # System call: sys_mmap (NR 9)
-    xorq %rdi, %rdi                 # Address hint: NULL
-    movq $8000, %rsi                # Length: 8000 bytes
-    movq $3, %rdx                   # Protection: PROT_READ | PROT_WRITE
-    movq $1, %r10                   # Flags: MAP_SHARED (auto-flushes to disk)
-    movq %r9, %r8                   # File descriptor argument placed in %r8 for mmap ABI
-    xorq %r9, %r9                   # Offset: 0 bytes
-    syscall                         # Map output buffer
-    testq %rax, %rax                # Validate return pointer
-    js .error_exit                  # Jump on failure
-    movq %rax, %r13                 # %r13 = Absolute base pointer of circular buffer
+    # 5. Seeding met RDRAND
+.get_seed:
+    rdrand %rax
+    jnc .get_seed
+    call mt_init_64
 
-    # -------------------------------------------------------------------------
-    # 3. Initialize Execution Loop Counters & Registers
-    # -------------------------------------------------------------------------
-    xorq %r15, %r15                 # %r15 = Total iteration counter (0 to 100,000)
-    xorq %r14, %r14                 # %r14 = Circular buffer index pointer (0 to 999)
+    # 6. Geef slots vrij (vlaggen op -1)
+    xorq %rcx, %rcx
+.release_slots:
+    movq %rcx, %rax
+    shlq $6, %rax               # Index * 64 bytes per slot
+    movq $-1, (%r12, %rax)
+    incq %rcx
+    cmpq $64, %rcx
+    jne .release_slots
+
+    xorq %r14, %r14             # Slot scan index
+    xorq %r15, %r15             # Heartbeat counter
 
 .main_loop:
-    # -------------------------------------------------------------------------
-    # Step A: Atomic Slot Scanning & Claiming Protocol
-    # -------------------------------------------------------------------------
-    xorq %rbx, %rbx                 # Reset slot search index to 0
+    incq %r15
+    movq %r15, 4088(%r12)       # Update heartbeat op offset 4088
 
-.scan_loop:
-    movq %rbx, %rax                 # Move current slot index into %rax
-    shlq $6, %rax                   # Multiply by 64 bytes per slot (2^6 = 64)
-    leaq (%r12, %rax), %rdi         # %rdi = Exact memory address of target slot_flag
+    # Scan huidig slot
+    movq %r14, %rax
+    shlq $6, %rax
+    leaq (%r12, %rax), %rbx     # %rbx = Adres van vlag
 
-    # Attempt to claim a free slot (-1) using atomic compare-and-swap:
-    # If memory value at [%rdi] equals -1 (free), replace it atomically with 1 (request pending)
-    movq $-1, %rax                  # Expected value: -1 (free slot state)
-    movq $1, %rdx                   # Desired value to write: 1 (request pending flag)
-    lock cmpxchgq %rdx, (%rdi)      # Atomic CAS hardware instruction
-    jz .wait_for_service            # If ZF (Zero Flag) is set, swap succeeded!
+    cmpq $0, (%rbx)             # Check op aanvraag (vlag == 0)
+    jne .next_slot
 
-    # Slot was busy; advance to next slot index in round-robin sequence
-    incq %rbx                       # Increment slot index counter
-    andq $63, %rbx                  # Bitwise modulo 64 restriction (indices range 0..63)
-    pause                           # Low-power execution hint for hardware thread spin-loops
-    jmp .scan_loop                  # Retry scanning subsequent slots
+    # Genereer getal
+    call mt_rand_64
+    movq %rax, 8(%rbx)          # Schrijf naar slot + 8
+    movq $-1, (%rbx)            # Geef terug aan client
 
-.wait_for_service:
-    # -------------------------------------------------------------------------
-    # Step B: Wait for Engine Completion (slot_flag becomes 0 -> result ready)
-    # -------------------------------------------------------------------------
-    movq (%rdi), %rax               # Read current slot flag state from shared memory
-    cmpq $0, %rax                   # Check if flag == 0 (result ready indicator)
-    je .store_data                  # Proceed to data extraction if ready
-
-    # Watchdog Check (Optional expansion point): 
-    # Can poll 4088(%r12) here to verify daemon heartbeat hasn't frozen.
-    jmp .wait_for_service           # Spin-wait until service updates flag to 0
-
-.store_data:
-    # -------------------------------------------------------------------------
-    # Step C: Extract Payload and Store in Circular Buffer
-    # -------------------------------------------------------------------------
-    movq 8(%rdi), %rax              # Read 64-bit random quadword payload from slot offset +8
-    movq %rax, (%r13, %r14, 8)      # Write value into circular buffer: base + (index * 8)
-
-    # Reset slot flag back to -1 (free) to release the slot back to the daemon engine
-    movq $-1, (%rdi)                # Write -1 to slot flag
-
-    # -------------------------------------------------------------------------
-    # Step D: Advance Circular Buffer Index & Iteration Limits
-    # -------------------------------------------------------------------------
-    incq %r14                       # Increment circular buffer write position index
-    cmpq $1000, %r14                # Check if buffer end boundary (1000 entries) is reached
-    jl .no_wrap                     # If index < 1000, skip wraparound logic
-    xorq %r14, %r14                 # Wrap circular index back to 0
-
-.no_wrap:
-    incq %r15                       # Increment main execution loop iteration count
-    cmpq $100000, %r15              # Target run limit: 100,000 iterations
-    jl .main_loop                   # Continue processing loop if limit not reached
-
-.done_exit:
-    # -------------------------------------------------------------------------
-    # Successful Termination Exit Sequence
-    # -------------------------------------------------------------------------
-    movq $60, %rax                  # System call: sys_exit (NR 60)
-    xorq %rdi, %rdi                 # Exit status code 0 (success)
-    syscall                         # Terminate client process safely
+.next_slot:
+    incq %r14
+    andq $63, %r14              # Wrap around 64 slots
+    pause
+    jmp .main_loop
 
 .error_exit:
-    # -------------------------------------------------------------------------
-    # Error Failure Exit Sequence
-    # -------------------------------------------------------------------------
-    movq $60, %rax                  # System call: sys_exit (NR 60)
-    movq $1, %rdi                   # Exit status code 1 (failure)
-    syscall                         # Terminate process with error status code
+    movq $60, %rax
+    movq $1, %rdi
+    syscall
+
+# --- MT19937-64 IMPLEMENTATIE ---
+
+mt_init_64:
+    leaq mt_state(%rip), %rdi
+    movq %rax, (%rdi)
+    movq $1, %rcx
+.init_loop:
+    movq -8(%rdi, %rcx, 8), %rax
+    movq %rax, %rdx
+    shrq $62, %rdx
+    xorq %rdx, %rax
+    movabsq $6364136223846793005, %rdx
+    imulq %rdx, %rax
+    addq %rcx, %rax
+    movq %rax, (%rdi, %rcx, 8)
+    incq %rcx
+    cmpq $312, %rcx
+    jne .init_loop
+    movq %rcx, mt_index(%rip)
+    ret
+
+mt_rand_64:
+    movq mt_index(%rip), %rax
+    cmpq $312, %rax
+    jl .no_twist
+    call mt_twist
+    xorq %rax, %rax
+.no_twist:
+    leaq mt_state(%rip), %rdx
+    movq (%rdx, %rax, 8), %r8
+    incq %rax
+    movq %rax, mt_index(%rip)
+
+    # Tempering (Fix voor 64-bit immediates)
+    movq %r8, %rax
+    shrq $29, %rax
+    movabsq $0x5555555555555555, %r9
+    andq %r9, %rax
+    xorq %rax, %r8
+    
+    movq %r8, %rax
+    shlq $17, %rax
+    movabsq $0x71D67FFFEDA60000, %r9
+    andq %r9, %rax
+    xorq %rax, %r8
+    
+    movq %r8, %rax
+    shlq $37, %rax
+    movabsq $0xFFF7EEE000000000, %r9
+    andq %r9, %rax
+    xorq %rax, %r8
+    
+    movq %r8, %rax
+    shrq $43, %rax
+    xorq %rax, %r8
+    
+    movq %r8, %rax
+    ret
+
+mt_twist:
+    pushq %rbp
+    xorq %rcx, %rcx
+    leaq mt_state(%rip), %rdi
+.twist_loop:
+    movq (%rdi, %rcx, 8), %rax
+    movabsq $0xFFFFFFFF80000000, %rdx
+    andq %rdx, %rax
+
+    movq %rcx, %rdx
+    incq %rdx
+    cmpq $312, %rdx
+    jne .no_wrap
+    xorq %rdx, %rdx
+.no_wrap:
+    movq (%rdi, %rdx, 8), %rbp
+    andq $0x7FFFFFFF, %rbp
+    orq %rbp, %rax
+
+    movq %rax, %rdx
+    shrq $1, %rdx
+    andq $1, %rax
+    jz .no_xor
+    movabsq $0xB5026F5AA96619E9, %rbp
+    xorq %rbp, %rdx
+.no_xor:
+    movq %rcx, %rbp
+    addq $156, %rbp
+    cmpq $312, %rbp
+    jl .no_m_wrap
+    subq $312, %rbp
+.no_m_wrap:
+    xorq (%rdi, %rbp, 8), %rdx
+    movq %rdx, (%rdi, %rcx, 8)
+    
+    incq %rcx
+    cmpq $312, %rcx
+    jne .twist_loop
+    movq $0, mt_index(%rip)
+    popq %rbp
+    ret
 
 .size _start, . - _start
 .section .note.GNU-stack,"",@progbits
