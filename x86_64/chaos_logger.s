@@ -32,6 +32,10 @@
 # limitations under the License.
 # =============================================================================
 
+.nolist
+    .include "unistd.inc"
+.list
+
 .equ SYS_READ,          0
 .equ SYS_WRITE,         1
 .equ SYS_OPEN,          2
