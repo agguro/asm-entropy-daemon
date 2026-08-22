@@ -1,45 +1,8 @@
 # =============================================================================
 # Project:      asm-entropy-daemon
-# File:         chaos_client.s
+# File:         chaos_service.s
 # Author:       agguro
 # Date:         August 20, 2026 
-# Description:  High-throughput client logger template that continuously reads random 
-#               64-bit entropy values from the Chaos Engine service via shared memory (mmap)
-#               and writes them into a circular memory-mapped output buffer file.
-#
-#               NOTE: This file serves as a robust IPC architecture template for 
-#               future assembly (.s) programs requiring zero-latency communication 
-#               and atomic slot synchronization via shared memory.
-#
-#   MATHEMATICAL & STRUCTURAL PROPERTIES:
-#   - Circular Buffer Capacity: 1000 entries * 8 bytes = 8000 bytes total.
-#   - Index Wrapping: Modulo arithmetic using bitmasking / conditional reset 
-#     ensures indices map strictly within the discrete interval [0, 999].
-#   - IPC Synchronization Protocol (State Machine):
-#     • -1 = Slot is free/idle (ready to be claimed)
-#     •  1 = Request pending (client set flag to request entropy)
-#     •  0 = Result ready (service generated value and stored payload)
-#   - Watchdog & Liveness: Monitors heartbeat at offset 4088 to detect daemon stalls.
-#
-# Architecture: x86_64 | Linux SysV ABI | AT&T Syntax
-#
-# Copyright 2026 agguro
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# =============================================================================
-# =============================================================================
-# MT19937-64 Chaos Service — The High Performance Engine
-# =============================================================================
 # Description:
 #   A high‑throughput MT19937‑64 random number service using shared memory,
 #   structured as a clean “engine + slots” design:
@@ -97,6 +60,22 @@
 #   - mt_index in .data tracks the current position in the MT state array.
 #   - All shared memory is zeroed once (“lockdown”) before slots are released.
 #   - Heartbeat is stored at offset 4088 (last 8 bytes of the 4 KB region).
+#
+# Architecture: x86_64 | Linux SysV ABI | AT&T Syntax
+#
+# Copyright 2026 agguro
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 # =============================================================================
 
 .section .rodata
@@ -301,3 +280,4 @@ mt_twist:
 
 .size _start, . - _start
 .section .note.GNU-stack,"",@progbits
+
