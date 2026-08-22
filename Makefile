@@ -56,7 +56,7 @@ $(BUILD_DIR)/chaos_monitor: x86_64/chaos_monitor.s
 	$(AS) $(ASFLAGS) $< -o $(BUILD_DIR)/chaos_monitor.o
 	$(LD) $(LDFLAGS) $(BUILD_DIR)/chaos_monitor.o -o $@
 
-stress_harness:
+stress_harness: $(TEST_BIN_SMALL) $(TEST_BIN_CRUSH) $(TEST_BIN_BIG)
 	$(CC) $(CFLAGS) x86_64/test_bbattery_smallcrush.c -o $(BUILD_DIR)/chaos_test_small -L$(LIB_DIR) -ltestu01 -lprobdist -lmylib -lm
 	$(CC) $(CFLAGS) x86_64/test_bbattery_crush.c       -o $(BUILD_DIR)/chaos_test_crush -L$(LIB_DIR) -ltestu01 -lprobdist -lmylib -lm
 	$(CC) $(CFLAGS) x86_64/test_bbattery_bigcrush.c    -o $(BUILD_DIR)/chaos_test_big   -L$(LIB_DIR) -ltestu01 -lprobdist -lmylib -lm
