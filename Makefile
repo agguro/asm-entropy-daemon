@@ -21,7 +21,7 @@ CFLAGS  := -O3 -march=native -I./$(TESTU01_SRC)/include
 
 .PHONY: all clean directories libs stress_harness test
 
-all: directories libs $(BUILD_DIR)/chaos_service $(BUILD_DIR)/chaos_client stress_harness
+all: directories libs $(BUILD_DIR)/chaos_service $(BUILD_DIR)/chaos_client $(BUILD_DIR)/chaos_monitor stress_harness
 
 directories:
 	@mkdir -p $(BUILD_DIR) $(LIB_DIR)
@@ -41,9 +41,13 @@ $(BUILD_DIR)/chaos_service: x86_64/chaos_service.s x86_64/print_hex64.s
 	$(AS) $(ASFLAGS) x86_64/print_hex64.s -o $(BUILD_DIR)/print_hex64.o
 	$(LD) $(LDFLAGS) $(BUILD_DIR)/chaos_service.o $(BUILD_DIR)/print_hex64.o -o $@
 
-$(BUILD_DIR)/chaos_client: x86_64/chaos_client.s
+$(BUILD_DIR)/chaos_logger: x86_64/chaos_client.s
 	$(AS) $(ASFLAGS) $< -o $(BUILD_DIR)/chaos_client.o
 	$(LD) $(LDFLAGS) $(BUILD_DIR)/chaos_client.o -o $@
+
+$(BUILD_DIR)/chaos_monitor: x86_64/chaos_monitor.s
+	$(AS) $(ASFLAGS) $< -o $(BUILD_DIR)/chaos_monitor.o
+	$(LD) $(LDFLAGS) $(BUILD_DIR)/chaos_monitor.o -o $@
 
 stress_harness:
 	$(CC) $(CFLAGS) x86_64/test_bbattery_smallcrush.c -o $(BUILD_DIR)/chaos_test_small -L$(LIB_DIR) -ltestu01 -lprobdist -lmylib -lm
