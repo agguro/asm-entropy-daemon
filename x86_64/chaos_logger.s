@@ -15,6 +15,34 @@
 #      • Licensed under the Apache License, Version 2.0
 #      • Fully compliant with SysV ABI and stack alignment requirements
 #
+#   Slots (0..63), each 64 bytes:
+#     base_i = shm_base + i * 64
+#        offset 0:  slot_flag (int64)
+#                   -  0  = request pending
+#                   - -1  = slot free / idle
+#        offset 8:  result (uint64)
+#
+#   Heartbeat:
+#        offset 4088: uint64 heartbeat counter (toggles or updates)
+#
+# Protocol: (client view)
+#
+#		[ SLOT STATE: -1 (FREE) ]
+#		     │  Client searches for a free slot and finds -1
+#		[ CLIENT WRITES: 0 (PENDING) ]
+#		     │
+#		     │  Engine scans around, sees 0, and picks up the request
+#		[ ENGINE GENERATES NUMBER ]
+#		     │
+#		     │  Engine writes the number to slot + 8 
+#		     │  AND sets the flag to: 1 (READY / AVAILABLE)
+#		[ SLOT STATE: 1 (READY) ]
+#		     │
+#		     │  Client notices the flag is set to 1
+#		     │  Client reads the 64-bit number from slot + 8
+#		     │  Client resets the flag back to: -1 (FREE)
+#		[ SLOT STATE: -1 (FREE) ]  <-- Cycle is complete and ready for the next round!
+#
 # Architecture: x86_64 | Linux SysV ABI | AT&T Syntax
 #
 # Copyright 2026 agguro

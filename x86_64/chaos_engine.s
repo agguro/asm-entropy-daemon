@@ -39,16 +39,22 @@
 #                    - incremented every main loop iteration
 #                    - clients can poll this to verify the service is alive
 #
-# Protocol (per slot):
-#   1. Client waits until slot_flag == -1 (slot free).
-#   2. Client writes 0 to slot_flag to request a new random value.
-#   3. Service loop:
-#        - scans slots in round‑robin (0..63)
-#        - when it sees flag == 0:
-#            * calls mt_rand_64() to get a 64‑bit random
-#            * writes result to offset +8
-#            * sets flag back to -1
-#   4. Client waits until flag == -1 again, then reads result at offset +8.
+# Protocol (Engine View):
+#		[ SLOT STATE: -1 (FREE) ]
+#		│
+#		│  Engine scans slots in round-robin and skips -1 / 1
+#		[ CLIENT WRITES: 0 (PENDING) ]
+#		│
+#		│  Engine detects flag == 0 and picks up the request
+#		[ ENGINE GENERATES NUMBER ]
+#		│
+#		│  Engine writes the random value to slot + 8
+#		│  Engine sets the flag to: 1 (READY)
+#		[ SLOT STATE: 1 (READY) ]
+#		│
+#		│  Engine moves on to other slots
+#		│  Client reads result at slot + 8 and resets flag to -1
+#		[ SLOT STATE: -1 (FREE) ]  <-- Slot is ready for the next cycle
 #
 # Notes:
 #   - Uses RDRAND once at startup to seed MT19937‑64.
