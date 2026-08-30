@@ -25,7 +25,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -50,12 +50,12 @@
 #define NUM_SLOTS 64
 
 typedef struct {
-    uint64_t flag;      /* -1 = Free, 0 = Request Pending */
-    uint64_t data;      /* Resulting random number payload */
-    uint8_t  padding[48]; /* Padding to exactly 64 bytes for optimal cache-line alignment */
+    uint64_t flag;        /* -1 = Free / Ready, 0 = Request Pending */
+    uint64_t data;        /* Resulting random number payload */
+    uint8_t  padding[48]; /* Padding to 64 bytes for cache-line alignment */
 } slot_t;
 
-slot_t *shm_base;
+static slot_t *shm_base;
 
 /* =============================================================================
  * Function: get_chaos_number
@@ -65,37 +65,30 @@ slot_t *shm_base;
  */
 unsigned int get_chaos_number (void) {
     static int current_slot = 0;
-    static int use_high_bits = 1;
-    static uint64_t cached_64bit_val = 0;
+    static int have_cached_bits = 0;
+    static uint64_t cached_val = 0;
 
-    /* If we have already sent the high bits, fetch a new 64-bit value */
-    if (!use_high_bits) {
-        /* Wait until the service sets this specific slot flag to -1 (Data Ready) */
-        while (shm_base[current_slot].flag != (uint64_t)-1) {
-            __builtin_ia32_pause(); 
-        }
-
-        /* Retrieve the full 64-bit entropy block from shared memory slot */
-        cached_64bit_val = shm_base[current_slot].data;
-        
-        /* Extract and return the lower 32 bits */
-        unsigned int low_bits = (unsigned int)(cached_64bit_val & 0xFFFFFFFF);
-        use_high_bits = 1;
-        return low_bits;
-    } else {
-        /* Return the upper 32 bits of the already fetched cached value */
-        unsigned int high_bits = (unsigned int)(cached_64bit_val >> 32);
-        
-        /* Signal the service that the slot is ready for a new request by setting flag to 0 */
-        shm_base[current_slot].flag = 0;
-        
-        /* Move to the next slot in the ring buffer (round-robin 0..63) */
-        current_slot = (current_slot + 1) % NUM_SLOTS;
-        
-        /* Toggle state flag for the subsequent call */
-        use_high_bits = 0;
-        return high_bits;
+    if (have_cached_bits) {
+        have_cached_bits = 0;
+        return (unsigned int)(cached_val >> 32);
     }
+
+    /* Request new 64-bit quadword from shared memory engine */
+    shm_base[current_slot].flag = 0;
+
+    /* Busy-wait with pause until engine sets slot flag back to -1 (Ready) */
+    while (shm_base[current_slot].flag != (uint64_t)-1) {
+        __builtin_ia32_pause();
+    }
+
+    /* Fetch generated 64-bit entropy block */
+    cached_val = shm_base[current_slot].data;
+
+    /* Advance slot index in ring buffer (0..63) */
+    current_slot = (current_slot + 1) % NUM_SLOTS;
+
+    have_cached_bits = 1;
+    return (unsigned int)(cached_val & 0xFFFFFFFF);
 }
 
 int main (void) {
@@ -106,9 +99,9 @@ int main (void) {
     }
 
     /* Map the full 4096 bytes (64 slots * 64 bytes per slot) into process space */
-    shm_base = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    shm_base = (slot_t *)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (shm_base == MAP_FAILED) {
-        perror("mmap failed");
+        perror("Error: mmap failed");
         close(fd);
         return 1;
     }
@@ -126,7 +119,7 @@ int main (void) {
     unif01_DeleteExternGenBits(gen);
     munmap(shm_base, 4096);
     close(fd);
-    
+
     printf("\nTest session completed.\n");
     return 0;
 }

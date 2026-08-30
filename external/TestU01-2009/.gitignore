@@ -1,0 +1,12 @@
+build/
+*.o
+*.a
+*.lst
+*.map
+.DS_Store
+
+# GCC / GDB artefacten
+*.dSYM/
+*.gcda
+*.gcno
+*.gcov

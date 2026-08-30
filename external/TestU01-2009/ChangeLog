@@ -1,0 +1,6 @@
+2026-08-29  Roberto Aguas Guerreiro <agguro>
+
+	* Modernized build system: replaced GNU Autotools with native Makefile.
+	* Output static libraries directly to build/libs/ (libmylib.a, libprobdist.a, libtestu01.a).
+	* Vendored complete C header tree into include/.
+	* Removed legacy Windows/Win32/MSVC artifacts; tailored for modern Linux (x86_64, AArch64, RISC-V).
