@@ -1,25 +1,142 @@
-# TestU01-2009
-This is the 2009 version of TestU01, a software library, implemented in the ANSI C language, and offering a collection of utilities for the empirical statistical testing of uniform random number generators. This 32-bit version is still the current official version, although a 64-bit version with many improvements is currently under development and may become available in late 2026.
+===============================================================================
+                  TestU01: Testing Random Number Generators
+              (Modernized Native Build & Linux-Only Distribution)
+===============================================================================
 
-The library implements several types of random number generators in generic form, as well as many specific generators proposed in the literature or found in widely-used software. It provides general implementations of the classical statistical tests for random number generators, as well as several others proposed in the literature, and some original ones. These tests can be applied to the generators predefined in the library and to user-defined generators. Specific tests suites for either sequences of uniform random numbers in [0,1] or bit sequences are also available. Basic tools for plotting vectors of points produced by generators are provided as well.
+TestU01 is a comprehensive software library implemented in ANSI C designed to
+perform empirical statistical testing on arbitrary Pseudorandom Number Generators
+(PRNG) and Hardware Random Number Generators (TRNG / Entropy sources).
 
-Additional software permits one to perform systematic studies of the interaction between a specific test and the structure of the point sets produced by a given family of random number generators. That is, for a given kind of test and a given class of random number generators, to determine how large should be the sample size of the test, as a function of the generator's period length, before the generator starts to fail the test systematically.
+Original Author & Copyright:
+    Pierre L'Ecuyer & Richard Simard
+    Université de Montréal
+    http://www.iro.umontreal.ca/~lecuyer/
 
-The documentation with a description of the functions in TestU01 is available in the user's guide below.
+Repository Maintainer & Modernization:
+    Roberto Aguas Guerreiro (agguro)
+    https://github.com/agguro/TestU01-2009
 
-## TestU01-1.2.3
-This version was created on 18 August 2009.
+-------------------------------------------------------------------------------
+MODERNIZATION & CLEANUP (Linux-Only Native Build)
+-------------------------------------------------------------------------------
 
-- Licence and [copyright](http://www.iro.umontreal.ca/~simul/testu01/copyright.html).
-- The installation uses configure.
-- [Binaries for Cygwin under MS Windows](https://www.iro.umontreal.ca/~simul/testu01/bin-cygwin.zip)
-- [Binaries for MinGW under MS Windows](https://www.iro.umontreal.ca/~simul/testu01/bin-mingw.zip)
-- [Installation](https://www.iro.umontreal.ca/~simul/testu01/install.html)
-- [User's guide](https://www.iro.umontreal.ca/~simul/testu01/guideshorttestu01.pdf) (pdf)
-- [Paper](http://portal.acm.org/citation.cfm?doid=1268776.1268777) (pdf) describing TestU01 with results from our test suites applied on several popular generators: P. L'Ecuyer and R. Simard, TestU01: A C Library for Empirical Testing of Random Number Generators ACM Transactions on Mathematical Software, Vol. 33, article 22, 2007.
-      ERRATUM: The period of generator Brent-xor4096s in Table I should be 2^4128 and not 2^131072.
-      
-## Contact us
-To submit a bug or a comment, send an e-mail to:
-[simul@iro.umontreal.ca](simul@iro.umontreal.ca)
-or create a pull request.
+The legacy GNU Autotools build system and all obsolete Windows/Win32/MSVC 
+artifacts have been completely removed in favor of a lean, deterministic Linux 
+development tree.
+
+Key modifications:
+  * Pure Linux / POSIX: Removed all Windows/MSYS/MinGW legacy wrappers, 
+    32-bit Win32 shims, and batch files.
+  * Native Build: Zero dependencies on autoconf, automake, libtool, or autoheader.
+  * Static Archiving: Generates static libraries directly into build/libs/.
+  * Multi-Arch Ready: Compiled with -fPIC by default for x86_64, AArch64, 
+    and RISC-V targets.
+  * Complete Header Tree: All module headers (*.h) are fully vendored in 
+    include/, eliminating LaTeX/tcode preprocessing requirements.
+  * Modern Toolchains: Builds cleanly under modern GCC (>= 8.0) and Clang.
+
+-------------------------------------------------------------------------------
+PLATFORM SUPPORT & REQUIREMENTS
+-------------------------------------------------------------------------------
+
+Target Environment: GNU/Linux (POSIX x86_64, AArch64, RISC-V)
+
+Requirements:
+  - Linux Kernel >= 3.x / glibc
+  - GCC or Clang
+  - GNU Make, ar, ranlib
+
+(Note: Windows users must build inside WSL2 or a Linux container)
+
+-------------------------------------------------------------------------------
+DIRECTORY STRUCTURE
+-------------------------------------------------------------------------------
+
+  -- testu01/   : Core statistical test batteries (SmallCrush, Crush, BigCrush),
+                  generator interfaces, and family testing harnesses.
+  -- probdist/  : Continuous and discrete probability distributions, goodness-of-fit,
+                  and statistical computation tools.
+  -- mylib/     : Low-level mathematical routines, bitset operations, POSIX timing,
+                  string manipulation, and memory management.
+  -- include/   : Consolidated C header files required for all modules.
+  -- examples/  : Sample programs demonstrating battery execution and generator tests.
+  -- param/     : Parameter files for predefined generator families.
+  -- doc/       : PDF user guides and technical references.
+  -- build/     : Output directory containing compiled static archives (build/libs/).
+
+-------------------------------------------------------------------------------
+BUILDING THE LIBRARIES
+-------------------------------------------------------------------------------
+
+To compile all modules and build the static archives in parallel:
+
+    make -j$(nproc)
+
+This produces the following archives in build/libs/:
+  - build/libs/libmylib.a
+  - build/libs/libprobdist.a
+  - build/libs/libtestu01.a
+
+To clean all build artifacts:
+
+    make clean
+
+-------------------------------------------------------------------------------
+LINKING & USAGE IN EXTERNAL PROJECTS
+-------------------------------------------------------------------------------
+
+1. Direct Compiler Invocation:
+
+    gcc -O3 main.c -o entropy_test \
+        -I/path/to/TestU01-2009/include \
+        -I/path/to/TestU01-2009/mylib \
+        -I/path/to/TestU01-2009/probdist \
+        -I/path/to/TestU01-2009/testu01 \
+        -L/path/to/TestU01-2009/build/libs \
+        -ltestu01 -lprobdist -lmylib -lm
+
+2. Integration in Parent Makefiles (e.g. asm-entropy-daemon):
+
+    TESTU01_DIR = external/TestU01-2009
+    INCLUDES    += -I$(TESTU01_DIR)/include \
+                   -I$(TESTU01_DIR)/mylib \
+                   -I$(TESTU01_DIR)/probdist \
+                   -I$(TESTU01_DIR)/testu01
+    LIBS        += $(TESTU01_DIR)/build/libs/libtestu01.a \
+                   $(TESTU01_DIR)/build/libs/libprobdist.a \
+                   $(TESTU01_DIR)/build/libs/libmylib.a -lm
+
+-------------------------------------------------------------------------------
+QUICK EXAMPLE (Running SmallCrush on custom PRNG)
+-------------------------------------------------------------------------------
+
+#include "unif01.h"
+#include "bbattery.h"
+#include <stdint.h>
+
+static uint32_t state = 0x12345678;
+
+static unsigned int xorshift32(void) {
+    uint32_t x = state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    state = x;
+    return x;
+}
+
+int main(void) {
+    unif01_Gen *gen = unif01_CreateExternGenBits("Xorshift32", xorshift32);
+    bbattery_SmallCrush(gen);
+    unif01_DeleteExternGenBits(gen);
+    return 0;
+}
+
+-------------------------------------------------------------------------------
+DOCUMENTATION
+-------------------------------------------------------------------------------
+
+PDF documentation is located in the doc/ directory:
+  - doc/guideshorttestu01.pdf : Quick-start guide for standard battery testing.
+  - doc/guidelongtestu01.pdf  : Full technical documentation.
+===============================================================================
